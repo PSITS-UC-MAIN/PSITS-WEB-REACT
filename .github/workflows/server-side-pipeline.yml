@@ -1,9 +1,10 @@
 name: PSITS Server
 
 on:
-  push:
+  pull_request:
     branches:
       - master
+      - production
 
 jobs:
   build:
