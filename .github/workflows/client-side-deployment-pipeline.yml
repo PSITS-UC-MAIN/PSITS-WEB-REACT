@@ -81,12 +81,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: static-site-${{ github.run_number }}
-          path: artifact-${{ github.run_number }}
+          path: ./
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: static-site-${{ github.run_number }}
-          path: artifact-${{ github.run_number }}
       - name: Archive site content
         uses: thedoctor0/zip-release@0.7.5
         with:
