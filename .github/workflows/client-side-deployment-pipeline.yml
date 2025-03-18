@@ -78,10 +78,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: Deploy-Preview
     steps:
+      - uses: actions/upload-artifact@v4
+        with:
+          name: static-site-${{ github.run_number }}
+          path: artifact-${{ github.run_number }}
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
-          name: static-site
+          name: static-site-${{ github.run_number }}
+          path: artifact-${{ github.run_number }}
       - name: Archive site content
         uses: thedoctor0/zip-release@0.7.5
         with:
