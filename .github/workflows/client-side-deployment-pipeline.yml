@@ -79,12 +79,13 @@ jobs:
     needs: Deploy-Preview
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: static-site
       - name: Archive site content
-        uses: thedoctor0/zip-release@master
+        uses: thedoctor0/zip-release@0.7.5
         with:
+          type: "zip"
           filename: release-${{ github.run_number }}.zip
       - name: Create Github Release
         uses: actions/create-release@v1
