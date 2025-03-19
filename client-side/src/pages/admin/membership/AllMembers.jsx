@@ -266,18 +266,16 @@ const Membership = () => {
       label: "",
       cell: (row) => (
         <ButtonsComponent>
-          {higherPosition() && (
-            <FormButton
-              type="button"
-              text="Change"
-              onClick={() => handleChangePassword(row.id_number)}
-              icon={<i className="fas fa-key" />} // Simple icon
-              styles="flex items-center space-x-2 bg-gray-200 text-gray-800 rounded-md px-3 py-1.5 transition duration-150 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
-              textClass="text-gray-800"
-              whileHover={{ scale: 1.02, opacity: 0.95 }}
-              whileTap={{ scale: 0.98, opacity: 0.9 }}
-            />
-          )}
+          <FormButton
+            type="button"
+            text="Change"
+            onClick={() => handleChangePassword(row.id_number)}
+            icon={<i className="fas fa-key" />} // Simple icon
+            styles="flex items-center space-x-2 bg-gray-200 text-gray-800 rounded-md px-3 py-1.5 transition duration-150 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            textClass="text-gray-800"
+            whileHover={{ scale: 1.02, opacity: 0.95 }}
+            whileTap={{ scale: 0.98, opacity: 0.9 }}
+          />
 
           <FormButton
             type="button"

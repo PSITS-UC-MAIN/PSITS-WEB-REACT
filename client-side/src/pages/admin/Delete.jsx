@@ -6,9 +6,6 @@ import { deletedStudent, studentRestore } from "../../api/admin";
 import ConfirmationModal from "../../components/common/modal/ConfirmationModal";
 import { ConfirmActionType } from "../../enums/commonEnums";
 import { showToast } from "../../utils/alertHelper";
-import { InfinitySpin } from "react-loader-spinner";
-import ButtonsComponent from "../../components/Custom/ButtonsComponent";
-import FormButton from "../../components/forms/FormButton";
 
 const Delete = () => {
   const [data, setData] = useState([]);

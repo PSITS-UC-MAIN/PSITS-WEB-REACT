@@ -5,6 +5,7 @@ const Cart = require("../models/CartModel");
 const Orders = require("../models/OrdersModel");
 const Merch = require("../models/MerchModel");
 const Log = require("../models/LogModel");
+const Admin = require("../models/AdminModel");
 const { ObjectId } = require("mongodb");
 require("dotenv").config();
 const { format } = require("date-fns");
@@ -48,36 +49,37 @@ router.get("/get-all-orders", authenticateToken, async (req, res) => {
 //orders/get-all-paid-orders
 //get all pending orders
 router.get("/get-all-pending-orders", authenticateToken, async (req, res) => {
-	try {
-    const orders = await Orders.find({order_status: "Pending"}).sort({ order_date: -1 });
-   
-		if (orders.length > 0) {
-			res.status(200).json(orders);
-		} else {
-			res.status(400).json({ message: "No Records" });
+  try {
+    const orders = await Orders.find({ order_status: "Pending" }).sort({
+      order_date: -1,
+    });
+
+    if (orders.length > 0) {
+      res.status(200).json(orders);
+    } else {
+      res.status(400).json({ message: "No Records" });
     }
-	} catch (error) {
-		console.error("Error fetching orders:", error);
-		res.status(500).json("Internal Server Error");
-	}
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json("Internal Server Error");
+  }
 });
 //Get all paid orders
 router.get("/get-all-paid-orders", authenticateToken, async (req, res) => {
-	try {
+  try {
     const orders = await Orders.find({ order_status: "Paid" }).sort({
-			order_date: -1
-		});
-		if (orders.length > 0) {
-			res.status(200).json(orders);
-		} else {
-			res.status(400).json({ message: "No Records" });
-		}
-	} catch (error) {
-		console.error("Error fetching orders:", error);
-		res.status(500).json("Internal Server Error");
-	}
+      order_date: -1,
+    });
+    if (orders.length > 0) {
+      res.status(200).json(orders);
+    } else {
+      res.status(400).json({ message: "No Records" });
+    }
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json("Internal Server Error");
+  }
 });
-
 
 router.post("/student-order", authenticateToken, async (req, res) => {
   const {
@@ -92,9 +94,20 @@ router.post("/student-order", authenticateToken, async (req, res) => {
     total,
     order_date,
     order_status,
+    admin,
   } = req.body;
   const itemsArray = Array.isArray(items) ? items : [items];
 
+  if (admin) {
+    const findAdmin = await Admin.findOne({ id_number: admin });
+
+    await new Log({
+      admin: findAdmin.name,
+      admin_id: findAdmin._id,
+      action: "Make manual Order for [" + student_name + "]",
+      target: "Manual Order [" + student_name + "]",
+    }).save();
+  }
 
   const student = await Student.findOne({ id_number: id_number });
 
@@ -257,92 +270,92 @@ router.put("/approve-order", authenticateToken, async (req, res) => {
 
     if (Array.isArray(items) && items.length > 0) {
       await Promise.all(
-				items.map(async (item) => {
-					const sizes = Array.isArray(item.sizes) ? item.sizes : [];
-					const variations = Array.isArray(item.variation)
-						? item.variation
-						: [];
-					const merchId = new ObjectId(item.product_id);
+        items.map(async (item) => {
+          const sizes = Array.isArray(item.sizes) ? item.sizes : [];
+          const variations = Array.isArray(item.variation)
+            ? item.variation
+            : [];
+          const merchId = new ObjectId(item.product_id);
 
-					const existMerch = await Merch.findOne({
-						_id: item.product_id,
-						"order_details.reference_code": reference_code,
-					});
-					//console.log(existMerch);
+          const existMerch = await Merch.findOne({
+            _id: item.product_id,
+            "order_details.reference_code": reference_code,
+          });
+          //console.log(existMerch);
 
-					if (!existMerch) {
-						await Merch.findByIdAndUpdate(item.product_id, {
-							$push: {
-								order_details: {
-									reference_code: reference_code,
-									product_name: item.product_name,
-									id_number: successfulOrder.id_number,
-									student_name: successfulOrder.student_name,
-									rfid: successfulOrder.rfid,
-									course: successfulOrder.course,
-									year: successfulOrder.year,
-									batch: item.batch,
-									size: { $each: sizes },
-									variation: { $each: variations },
-									quantity: item.quantity,
-									total: item.sub_total,
-									order_date: successfulOrder.order_date,
-									transaction_date: successfulOrder.transaction_date,
-								},
-							},
-							$inc: {
-								"sales_data.unitsSold": item.quantity,
-								"sales_data.totalRevenue": item.sub_total,
-							},
-						});
+          if (!existMerch) {
+            await Merch.findByIdAndUpdate(item.product_id, {
+              $push: {
+                order_details: {
+                  reference_code: reference_code,
+                  product_name: item.product_name,
+                  id_number: successfulOrder.id_number,
+                  student_name: successfulOrder.student_name,
+                  rfid: successfulOrder.rfid,
+                  course: successfulOrder.course,
+                  year: successfulOrder.year,
+                  batch: item.batch,
+                  size: { $each: sizes },
+                  variation: { $each: variations },
+                  quantity: item.quantity,
+                  total: item.sub_total,
+                  order_date: successfulOrder.order_date,
+                  transaction_date: successfulOrder.transaction_date,
+                },
+              },
+              $inc: {
+                "sales_data.unitsSold": item.quantity,
+                "sales_data.totalRevenue": item.sub_total,
+              },
+            });
 
-						const merchToGet = await Merch.findById(item.product_id);
+            const merchToGet = await Merch.findById(item.product_id);
 
-						const event = await Event.findOne({ eventId: merchId });
+            const event = await Event.findOne({ eventId: merchId });
 
-						if (event) {
-							const campusData = event.sales_data.find(
-								(s) => s.campus === student.campus
-							);
-							if (!campusData) {
-								return res.status(400).json({ message: "Invalid campus" });
-							}
+            if (event) {
+              const campusData = event.sales_data.find(
+                (s) => s.campus === student.campus
+              );
+              if (!campusData) {
+                return res.status(400).json({ message: "Invalid campus" });
+              }
 
-							campusData.unitsSold += 1;
-							campusData.totalRevenue += Number.parseInt(item.sub_total);
+              campusData.unitsSold += 1;
+              campusData.totalRevenue += Number.parseInt(item.sub_total);
 
-							event.totalUnitsSold += 1;
-							event.totalRevenueAll += Number.parseInt(item.sub_total);
-							event.save();
-						}
+              event.totalUnitsSold += 1;
+              event.totalRevenueAll += Number.parseInt(item.sub_total);
+              event.save();
+            }
 
-						if (merchToGet && merchToGet.category === "ict-congress") {
-							await Event.findOneAndUpdate(
-								{
-									eventId: merchId,
-									"attendees.id_number": { $ne: successfulOrder.id_number },
-								},
-								{
-									$push: {
-										attendees: {
-											id_number: successfulOrder.id_number,
-											name: successfulOrder.student_name,
-											email: successfulOrder.email,
-											course: successfulOrder.course,
-											year: successfulOrder.year,
-											campus: student.campus,
-											isAttended: false,
-											shirtSize: sizes.length > 0 ? sizes[0] : null,
-											shirtPrice: merchToGet.price,
-										},
-									},
-								},
-								{ upsert: true }
-							);
-						}
-					}
-				})
-			);
+            if (merchToGet && merchToGet.category === "ict-congress") {
+              await Event.findOneAndUpdate(
+                {
+                  eventId: merchId,
+                  "attendees.id_number": { $ne: successfulOrder.id_number },
+                },
+                {
+                  $push: {
+                    attendees: {
+                      id_number: successfulOrder.id_number,
+                      name: successfulOrder.student_name,
+                      email: successfulOrder.email,
+                      course: successfulOrder.course,
+                      year: successfulOrder.year,
+                      campus: student.campus,
+                      isAttended: false,
+                      shirtSize: sizes.length > 0 ? sizes[0] : null,
+                      shirtPrice: merchToGet.price,
+                    },
+                  },
+                },
+                { upsert: true }
+              );
+            }
+          }
+        })
+      );
     }
 
     // Render and send the email
