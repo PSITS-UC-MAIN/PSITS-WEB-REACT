@@ -22,6 +22,7 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const currentDate = new Date();
   const end = new Date(currentDate.getFullYear(), 3, 30);
+  const token = sessionStorage.getItem("Token");
 
   const fetchAllEvents = async () => {
     const result = await getEvents();
@@ -33,7 +34,7 @@ const StudentDashboard = () => {
   const handleFetchSpecificStudent = async () => {
     try {
       const result = await fetchSpecificStudent(userData.id_number);
-      if (result) setIsRequest(result.isRequest);
+      setIsRequest(result ? result.isRequest : false);
     } catch (error) {
       console.error("Error fetching student data:", error);
     }
@@ -44,23 +45,24 @@ const StudentDashboard = () => {
       const result = await merchandise();
       const currentDate = new Date();
 
-      const filteredProducts = result.filter((item) => {
-        const startDate = new Date(item.start_date);
-        const endDate = new Date(item.end_date);
-        const selectedAudienceArray = item.selectedAudience.includes(",")
-          ? item.selectedAudience.split(",").map((aud) => aud.trim())
-          : [item.selectedAudience];
+      if (result) {
+        const filteredProducts = result.filter((item) => {
+          const startDate = new Date(item.start_date);
+          const endDate = new Date(item.end_date);
+          const selectedAudienceArray = item.selectedAudience.includes(",")
+            ? item.selectedAudience.split(",").map((aud) => aud.trim())
+            : [item.selectedAudience];
 
-        return (
-          currentDate <= endDate &&
-          (selectedAudienceArray.some(
-            (audience) => userData.audience.includes(audience) && !isRequest
-          ) ||
-            selectedAudienceArray.includes("all"))
-        );
-      });
-
-      setProducts(filteredProducts);
+          return (
+            currentDate <= endDate &&
+            (selectedAudienceArray.some(
+              (audience) => userData.audience.includes(audience) && !isRequest
+            ) ||
+              selectedAudienceArray.includes("all"))
+          );
+        });
+        setProducts(filteredProducts ? filteredProducts : []);
+      } else setProducts([]);
     } catch (error) {
       console.error("Error fetching merchandise:", error);
     }
@@ -68,6 +70,7 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     setLoading(true);
+    if (!token) return;
     const fetchData = async () => {
       await Promise.all([
         fetchMerchandise(),
@@ -77,7 +80,7 @@ const StudentDashboard = () => {
       setLoading(false);
     };
     fetchData();
-  }, [isRequest]);
+  }, [token]);
 
   return (
     <div className="max-w-[1600px] mx-auto grid grid-cols-1 py-5 md:grid-cols-2 lg:grid-cols-7 lg:flex gap-6">

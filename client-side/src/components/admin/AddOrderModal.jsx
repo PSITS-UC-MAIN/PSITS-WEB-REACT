@@ -7,23 +7,20 @@ import TextInput from "../common/TextInput";
 import Button from "../../components/common/Button";
 import { getInformationData } from "../../authentication/Authentication";
 
-// Add Order Modal jud
 const AddOrderModal = ({ handleClose = () => {}, onCreateOrder }) => {
-  // options
   const [studentOptions, setStudentOptions] = useState([]);
   const [merchOptions, setMerchOptions] = useState([]);
-  // formData
-  const [student, setStudent] = useState();
-  const [item, setItem] = useState();
+  const [student, setStudent] = useState(null);
+  const [item, setItem] = useState(null);
   const [size, setSize] = useState("");
   const [variation, setVariation] = useState("");
   const [amount, setAmount] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const user = getInformationData();
 
   useEffect(() => {
-    /* Merchandise Options */
     const fetchMerchOptions = async () => {
       const temp = await merchandiseAdmin();
       setMerchOptions(
@@ -39,11 +36,12 @@ const AddOrderModal = ({ handleClose = () => {}, onCreateOrder }) => {
     const fetchStudentOptions = async () => {
       try {
         const result = await membership();
-        const options = result.map((student) => ({
-          label: `${student.id_number} - ${student.first_name} ${student.last_name}`,
-          value: student,
-        }));
-        setStudentOptions(options);
+        setStudentOptions(
+          result.map((student) => ({
+            label: `${student.id_number} - ${student.first_name} ${student.last_name}`,
+            value: student,
+          }))
+        );
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -53,22 +51,35 @@ const AddOrderModal = ({ handleClose = () => {}, onCreateOrder }) => {
     fetchStudentOptions();
   }, []);
 
-  const handleSizeClick = (size) => setSize(size);
-  const handleVariationClick = (variation) => setVariation(variation);
+  useEffect(() => {
+    if (item?.price) {
+      setAmount((item.price * quantity).toFixed(2));
+    }
+  }, [item, quantity]);
 
-  const calculateTotal = (qty, price) => {
-    return (price * qty).toFixed(2);
+  const validateForm = () => {
+    let tempErrors = {};
+    if (!student) tempErrors.student = "Student is required.";
+    if (!item) tempErrors.item = "Item is required.";
+    if (!quantity || quantity <= 0)
+      tempErrors.quantity = "Quantity must be greater than 0.";
+
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0; // Returns true if no errors
   };
 
   const createOrderHandler = () => {
+    if (!validateForm()) return;
+
     setIsLoading(true);
+
     const items = {
       product_id: item._id,
       imageUrl1: item.imageUrl[0],
       product_name: item.name,
-      limited: item.control === "limited-purchase" ? true : false,
+      limited: item.control === "limited-purchase",
       price: item.price,
-      quantity: quantity,
+      quantity,
       sub_total: amount,
       variation: item.category === "uniform" ? variation : "",
       sizes: size,
@@ -82,14 +93,9 @@ const AddOrderModal = ({ handleClose = () => {}, onCreateOrder }) => {
       membership_discount: false,
       course: student.course,
       year: student.year,
-      student_name:
-        student.first_name +
-        " " +
-        student.middle_name +
-        " " +
-        student.last_name,
-      items: items,
-      total: calculateTotal(quantity, amount),
+      student_name: `${student.first_name} ${student.middle_name} ${student.last_name}`,
+      items,
+      total: (quantity * amount).toFixed(2),
       admin: user.id_number,
       order_date: new Date(),
       order_status: "Pending",
@@ -97,28 +103,36 @@ const AddOrderModal = ({ handleClose = () => {}, onCreateOrder }) => {
 
     onCreateOrder(formData);
   };
-  useEffect(() => {
-    if (item?.price) {
-      setAmount(calculateTotal(quantity, item.price));
-    }
-  }, [item, quantity]);
 
   return (
     <Modal onClose={handleClose}>
       <div className="flex flex-col gap-2 p-4 h-full">
         <h1 className="text-2xl font-semibold"> Add Order </h1>
+
         <SearchDropdown
           label="Student"
           placeholder="Search ID Number..."
           options={studentOptions}
-          onOptionSelect={(opt) => setStudent(opt ? opt.value : null)}
+          onOptionSelect={(opt) => {
+            setStudent(opt ? opt.value : null);
+            setErrors({ ...errors, student: "" });
+          }}
         />
+        {errors.student && (
+          <p className="text-red-500 text-sm">{errors.student}</p>
+        )}
+
         <SearchDropdown
           label="Item"
           placeholder="Search Item Name..."
           options={merchOptions}
-          onOptionSelect={(opt) => setItem(opt ? opt.value : null)}
+          onOptionSelect={(opt) => {
+            setItem(opt ? opt.value : null);
+            setErrors({ ...errors, item: "" });
+          }}
         />
+        {errors.item && <p className="text-red-500 text-sm">{errors.item}</p>}
+
         <TextInput
           label="Quantity"
           type="number"
@@ -127,20 +141,22 @@ const AddOrderModal = ({ handleClose = () => {}, onCreateOrder }) => {
           onChange={(e) => {
             const qty = parseInt(e.target.value) || 1;
             setQuantity(qty);
+            setErrors({ ...errors, quantity: "" });
           }}
         />
+        {errors.quantity && (
+          <p className="text-red-500 text-sm">{errors.quantity}</p>
+        )}
+
         <TextInput
           label="Amount"
           type="number"
-          value={amount} // Use state value
+          value={amount}
           placeholder="Price"
           disabled
         />
 
-        {/* Order specific functions should be here */}
-        {/* If item is t-shirt */}
         {item &&
-        /* If type is Uniform, Tshirt, or Tshirt w/ Bundle */
         (item.type === "Uniform" ||
           item.type === "Tshirt" ||
           item.type === "Tshirt w/ Bundle") ? (
@@ -151,7 +167,7 @@ const AddOrderModal = ({ handleClose = () => {}, onCreateOrder }) => {
                 <button
                   key={s}
                   type="button"
-                  onClick={() => handleSizeClick(s)}
+                  onClick={() => setSize(s)}
                   className={`p-2 border rounded ${
                     size === s
                       ? "bg-blue-500 text-white"
@@ -162,13 +178,14 @@ const AddOrderModal = ({ handleClose = () => {}, onCreateOrder }) => {
                 </button>
               ))}
             </div>
+
             <p className="font-semibold">Variations:</p>
             <div className="flex gap-2 flex-wrap text-sm">
               {item.selectedVariations.map((v) => (
                 <button
                   key={v}
                   type="button"
-                  onClick={() => handleVariationClick(v)}
+                  onClick={() => setVariation(v)}
                   className={`p-2 border rounded ${
                     variation === v
                       ? "bg-blue-500 text-white"
@@ -180,10 +197,13 @@ const AddOrderModal = ({ handleClose = () => {}, onCreateOrder }) => {
               ))}
             </div>
           </div>
-        ) : (
-          <></>
-        )}
-        <Button size="full" onClick={createOrderHandler} disabled={isLoading}>
+        ) : null}
+
+        <Button
+          size="full"
+          onClick={createOrderHandler}
+          disabled={isLoading || !student || !item || quantity <= 0}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center">
               <svg

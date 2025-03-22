@@ -15,17 +15,19 @@ export const login = async (formData) => {
       }
     );
     if (response.status === 200) {
-      showToast("success", response.data.message);
       sessionStorage.setItem(
         "Token",
         response.status === 200 ? response.data.token : ""
       );
+     
+
       return (
         (sessionStorage.getItem("Token") !== "" ||
           sessionStorage.getItem("Token")) !== null && {
           role: response.data.role,
           campus: response.data.campus,
           token: response.data.token,
+          message: response.data.message,
         }
       );
     } else {

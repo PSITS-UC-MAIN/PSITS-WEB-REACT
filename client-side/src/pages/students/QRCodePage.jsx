@@ -13,7 +13,9 @@ const QRCodePage = ({ closeView, event }) => {
   const [studentName, setStudentName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [attendanceStatus, setAttendanceStatus] = useState();
+  const [merchData, setMerchData] = useState([]);
   const navigate = useNavigate();
+  const student = getInformationData();
 
   const handleBackdropClick = (e) => {
     if (e.target.id === "modal-backdrop") {
@@ -23,7 +25,7 @@ const QRCodePage = ({ closeView, event }) => {
 
   const checkIfUserIsAttendee = () => {
     setIsLoading(true);
-    const student = getInformationData();
+
     setStudentId(student.id_number);
 
     const attendee = event.attendees.find(
@@ -47,26 +49,78 @@ const QRCodePage = ({ closeView, event }) => {
 
   const fetchMerchData = async () => {
     try {
-			const token = sessionStorage.getItem("Token");
+      const token = sessionStorage.getItem("Token");
 
-			const response = await axios.get(
-				`${backendConnection()}/api/merch/retrieve/${event.eventId}`,
-				{
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-				}
-			);
-			const data = response.data;
+      const response = await axios.get(
+        `${backendConnection()}/api/merch/retrieve/${event.eventId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const data = response.data;
 
-			navigate(`/student/merchandise/${event.eventId}`, {
-				state: data,
-			});
-		} catch (error) {
+      navigate(`/student/merchandise/${event.eventId}`, {
+        state: data,
+      });
+    } catch (error) {
       console.error("Error fetching merchandise data:", error);
     }
   };
+
+  const fetchMerch = async () => {
+    try {
+      const token = sessionStorage.getItem("Token");
+
+      const response = await axios.get(
+        `${backendConnection()}/api/merch/retrieve/${event.eventId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      
+
+      const merchArray = Array.isArray(response.data)
+        ? response.data
+        : [response.data]; // Ensure it's an array
+
+      const currentDate = new Date();
+
+      const filteredProducts = merchArray.filter((item) => {
+        const startDate = new Date(item.start_date);
+        const endDate = new Date(item.end_date);
+
+        const selectedAudienceArray = item.selectedAudience.includes(",")
+          ? item.selectedAudience.split(",").map((aud) => aud.trim())
+          : [item.selectedAudience];
+
+        return (
+          currentDate <= endDate &&
+          item.is_active &&
+          (selectedAudienceArray.some((audience) =>
+            student.audience.includes(audience)
+          ) ||
+            selectedAudienceArray.includes("all"))
+        );
+      });
+
+   
+
+      setMerchData(filteredProducts);
+    } catch (error) {
+      console.error("Error fetching merchandise data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchMerch();
+  }, []);
 
   const renderStatusBadge = () => {
     let bgColor = "bg-gray-200";
@@ -156,7 +210,7 @@ const QRCodePage = ({ closeView, event }) => {
                     Scan this code to confirm your attendance.
                   </p>
                 </>
-              ) : (
+              ) : merchData.length > 0 && merchData ? (
                 <div>
                   <p className="text-sm text-gray-500 mt-4">
                     You have not purchased a ticket for this event.{" "}
@@ -169,6 +223,12 @@ const QRCodePage = ({ closeView, event }) => {
                     </Link>{" "}
                     to order. Pay in the PSITS Office afterwards to confirm
                     purchase.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-gray-500 mt-4">
+                    Purchasing of ticket for this event is expired.{" "}
                   </p>
                 </div>
               )}

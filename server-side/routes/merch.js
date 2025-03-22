@@ -11,8 +11,10 @@ const multerS3 = require("multer-s3");
 const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { ObjectId } = require("mongodb");
 require("dotenv").config();
-const authenticateToken = require("../middlewares/authenticateToken");
-
+const {
+  admin_authenticate,
+  both_authenticate,
+} = require("../middlewares/custom_authenticate_token");
 const router = express.Router();
 
 const s3Client = new S3Client({
@@ -38,7 +40,7 @@ const upload = multer({
 
 router.post(
   "/",
-  authenticateToken,
+  admin_authenticate,
   upload.array("images", 3),
   async (req, res) => {
     const {
@@ -123,7 +125,7 @@ router.post(
   }
 );
 
-router.get("/retrieve", authenticateToken, async (req, res) => {
+router.get("/retrieve", both_authenticate, async (req, res) => {
   try {
     const merches = await Merch.find({
       is_active: true,
@@ -135,7 +137,7 @@ router.get("/retrieve", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/retrieve/:id", authenticateToken, async (req, res) => {
+router.get("/retrieve/:id", both_authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const merch = await Merch.findById(id);
@@ -151,7 +153,7 @@ router.get("/retrieve/:id", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/retrieve-admin", authenticateToken, async (req, res) => {
+router.get("/retrieve-admin", admin_authenticate, async (req, res) => {
   try {
     const merches = await Merch.find({});
     res.status(200).json(merches);
@@ -161,12 +163,12 @@ router.get("/retrieve-admin", authenticateToken, async (req, res) => {
   }
 });
 
-router.delete("/delete-report", authenticateToken, async (req, res) => {
+router.delete("/delete-report", admin_authenticate, async (req, res) => {
   const { product_id, id, merchName } = req.body;
 
   try {
     // Ensure the request comes from an admin
-    if (req.role !== "Admin") {
+    if (req.user.role !== "Admin") {
       return res.status(403).json({ message: "Forbidden: Admin access only." });
     }
     const productId = new mongoose.Types.ObjectId(product_id);
@@ -208,7 +210,7 @@ router.delete("/delete-report", authenticateToken, async (req, res) => {
 
 router.put(
   "/update/:_id",
-  authenticateToken,
+  admin_authenticate,
   upload.array("images", 3),
   async (req, res) => {
     const {
@@ -404,7 +406,7 @@ router.put(
 );
 
 // DELETE merch by id (soft)
-router.put("/delete-soft", authenticateToken, async (req, res) => {
+router.put("/delete-soft", admin_authenticate, async (req, res) => {
   const { _id } = req.body;
 
   try {
@@ -446,7 +448,7 @@ router.put("/delete-soft", authenticateToken, async (req, res) => {
 });
 
 // Publish merch
-router.put("/publish", authenticateToken, async (req, res) => {
+router.put("/publish", admin_authenticate, async (req, res) => {
   const { _id } = req.body;
 
   try {
@@ -490,7 +492,7 @@ router.put("/publish", authenticateToken, async (req, res) => {
 // ADD merch to cart as Student
 router.put(
   "/add-to-cart/:student_id/:merch_id",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     const { student_id, merch_id } = req.params;
 
@@ -529,7 +531,7 @@ router.put(
 );
 
 // GET cart list as Student
-router.get("/cart/:student_id", authenticateToken, async (req, res) => {
+router.get("/cart/:student_id", admin_authenticate, async (req, res) => {
   const student_id = req.params.student_id;
 
   try {
@@ -554,7 +556,7 @@ router.get("/cart/:student_id", authenticateToken, async (req, res) => {
 // DELETE merch from cart as Student
 router.delete(
   "/remove-from-cart/:student_id/:merch_id",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     const { student_id, merch_id } = req.params;
 

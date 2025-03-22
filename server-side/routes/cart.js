@@ -4,8 +4,11 @@ const Student = require("../models/StudentModel");
 const { ObjectId } = require("mongodb");
 const authenticateToken = require("../middlewares/authenticateToken");
 const router = express.Router();
+const {
+  student_authenticate,
+} = require("../middlewares/custom_authenticate_token");
 
-router.post("/add-cart", authenticateToken, async (req, res) => {
+router.post("/add-cart", student_authenticate, async (req, res) => {
   const {
     id_number,
     product_id,
@@ -50,7 +53,7 @@ router.post("/add-cart", authenticateToken, async (req, res) => {
         if (itemIndex > -1) {
           student.cart[itemIndex].quantity = existingCart.quantity + quantity;
           await student.save();
-   
+
           res
             .status(200)
             .json({ message: "Added Item into the cart successfully" });
@@ -95,7 +98,7 @@ router.post("/add-cart", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/view-cart", authenticateToken, async (req, res) => {
+router.get("/view-cart", student_authenticate, async (req, res) => {
   const { id_number } = req.query;
 
   try {
@@ -113,7 +116,7 @@ router.get("/view-cart", authenticateToken, async (req, res) => {
   }
 });
 
-router.put("/delete-item-cart", authenticateToken, async (req, res) => {
+router.put("/delete-item-cart", student_authenticate, async (req, res) => {
   const { id_number, cart_id } = req.body;
 
   try {

@@ -11,11 +11,11 @@ function StudentEvents() {
 
   const handleGetEvents = async () => {
     const response = await getEvents();
-    setEvents(response.data);
+    setEvents(response.data ? response.data : []);
   };
 
   useEffect(() => {
-    handleGetEvents();  
+    handleGetEvents();
   }, []);
 
   const handleButtonClick = (event) => {

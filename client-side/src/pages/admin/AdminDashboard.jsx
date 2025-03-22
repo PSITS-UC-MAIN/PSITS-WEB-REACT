@@ -34,7 +34,7 @@ const AdminDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+  const token = sessionStorage.getItem("Token");
 
   const animateCount = () => {
     const increment = Math.ceil(
@@ -71,7 +71,7 @@ const AdminDashboard = () => {
       });
     }, 20);
   };
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       const [studentRes, merchCreate, placedOrder, pendingOrders] =
         await Promise.all([
@@ -91,12 +91,12 @@ const AdminDashboard = () => {
       animateCount();
     } catch (error) {
       setError("Error fetching dashboard data");
-      
     } finally {
       setLoading(false);
     }
-  });
+  };
   useEffect(() => {
+    if (!token) return;
     const delayFetch = setInterval(() => {
       fetchData();
     }, 1000);

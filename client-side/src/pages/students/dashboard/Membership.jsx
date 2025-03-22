@@ -12,15 +12,18 @@ function Membership({ styles }) {
     membership: "",
     renew: "",
   });
+  const token = sessionStorage.getItem("Token");
 
   const user = getInformationData();
   const fetchStatus = async () => {
     try {
       const status = await getMembershipStatusStudents(user.id_number);
-      setMembershipStatus({
-        membership: status?.membership || "",
-        renew: status?.renew || "",
-      });
+      if (status) {
+        setMembershipStatus({
+          membership: status?.membership || "",
+          renew: status?.renew || "",
+        });
+      }
     } catch (error) {
       console.error("Error fetching membership status:", error);
       setMembershipStatus({ membership: "", renew: "" });
@@ -28,6 +31,7 @@ function Membership({ styles }) {
   };
 
   useEffect(() => {
+    if (!token) return;
     fetchStatus();
   }, []);
 
