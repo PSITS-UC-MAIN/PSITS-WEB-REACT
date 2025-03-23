@@ -12,7 +12,7 @@ const PrivateRouteStudent = ({ element: Component }) => {
   const checkAuthentication = async () => {
     try {
       const response = await axios.get(
-        `${backendConnection()}/api/protected-route`,
+        `${backendConnection()}/api/protected-route-student`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -20,8 +20,8 @@ const PrivateRouteStudent = ({ element: Component }) => {
         }
       );
 
-      setInformationData(response.data.user, response.data.role);
-      if (response.data.role === "Student") {
+      setInformationData(response.data.user, response.data.user.role);
+      if (response.data.user.role === "Student") {
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);

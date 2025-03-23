@@ -13,11 +13,13 @@ export const membership = async () => {
         Authorization: `Bearer ${token}`,
       },
     });
-
-    return response.data;
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      window.location.reload();
+    }
   } catch (error) {
     if (error.response && error.response.data) {
-      window.location.reload();
       return false;
     } else {
       console.log("error", "An error occurred");

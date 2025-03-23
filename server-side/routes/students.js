@@ -5,12 +5,16 @@ const Admin = require("../models/AdminModel");
 const Orders = require("../models/OrdersModel");
 const Log = require("../models/LogModel");
 const { format } = require("date-fns");
-const authenticateToken = require("../middlewares/authenticateToken");
 
+const {
+  admin_authenticate,
+  student_authenticate,
+  both_authenticate,
+} = require("../middlewares/custom_authenticate_token");
 const router = express.Router();
 
 // GET list of accepted students
-router.get("/students", authenticateToken, async (req, res) => {
+router.get("/students", both_authenticate, async (req, res) => {
   try {
     const students = await Student.find({
       status: "True",
@@ -29,7 +33,7 @@ router.get("/students", authenticateToken, async (req, res) => {
   }
 });
 
-router.put("/students/request", authenticateToken, async (req, res) => {
+router.put("/students/request", student_authenticate, async (req, res) => {
   try {
     const { id_number } = req.body;
 
@@ -66,7 +70,7 @@ router.put("/students/request", authenticateToken, async (req, res) => {
 
 router.get(
   "/students/deleted-students",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     try {
       const students = await Student.find({
@@ -81,12 +85,12 @@ router.get(
 );
 
 router.get(
-  "/students/get-membership-status",
-  authenticateToken,
+  "/students/get-membership-status/:id",
+  student_authenticate,
   async (req, res) => {
-    const { id_number } = req.query;
+    const { id } = req.params;
     try {
-      const student = await Student.findOne({ id_number });
+      const student = await Student.findOne({ id_number: id });
       if (!student) {
         return res.status(404).json({ message: "Student not found" });
       }
@@ -105,7 +109,7 @@ router.get(
 );
 
 // SOFT DELETE student by id_number
-router.put("/students/softdelete", authenticateToken, async (req, res) => {
+router.put("/students/softdelete", admin_authenticate, async (req, res) => {
   const { id_number, name } = req.body;
 
   try {
@@ -132,7 +136,7 @@ router.put("/students/softdelete", authenticateToken, async (req, res) => {
   }
 });
 
-router.put("/students/restore", authenticateToken, async (req, res) => {
+router.put("/students/restore", admin_authenticate, async (req, res) => {
   const { id_number } = req.body;
 
   try {
@@ -159,7 +163,7 @@ router.put("/students/restore", authenticateToken, async (req, res) => {
 // HARD DELETE student by id_number
 router.put(
   "/students/cancel/:id_number",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     const id_number = req.params.id_number;
 
@@ -187,7 +191,7 @@ router.put(
   }
 );
 
-router.post("/editedStudent", authenticateToken, async (req, res) => {
+router.post("/editedStudent", admin_authenticate, async (req, res) => {
   const {
     id_number,
     rfid,
@@ -260,7 +264,7 @@ router.post("/editedStudent", authenticateToken, async (req, res) => {
 
 //Edit Profile Side
 
-router.post("/edit", authenticateToken, async (req, res) => {
+router.post("/edit", admin_authenticate, async (req, res) => {
   const { id_number, name, email, course, year, role } = req.body;
   try {
     if (role === "Admin") {
@@ -314,7 +318,7 @@ router.post("/edit", authenticateToken, async (req, res) => {
 
 router.post(
   "/students/change-password-admin",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     try {
       const getStudent = await Student.findOne({
@@ -353,26 +357,26 @@ router.post(
 );
 
 router.get(
-	"/fetch-specific-student/:id_number",
-	authenticateToken,
-	async (req, res) => {
-		const { id_number } = req.params;
+  "/fetch-specific-student/:id_number",
+  both_authenticate,
+  async (req, res) => {
+    const { id_number } = req.params;
 
-		try {
-			const student = await Student.findOne({ id_number });
-			if (!student) {
-				res.status(404).json({ message: "Student not found" });
-			} else {
-				const user = {
-					isRequest: student.isRequest,
-					role: student.role,
-				};
-				res.status(200).json({ data: user });
-			}
-		} catch (error) {
-			console.error(error);
-		}
-	}
+    try {
+      const student = await Student.findOne({ id_number });
+      if (!student) {
+        res.status(404).json({ message: "Student not found" });
+      } else {
+        const user = {
+          isRequest: student.isRequest,
+          role: student.role,
+        };
+        res.status(200).json({ data: user });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
 );
 
 module.exports = router;

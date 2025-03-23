@@ -4,11 +4,15 @@ const Merch = require("../models/MerchModel");
 const authenticateToken = require("../middlewares/authenticateToken");
 const { ObjectId } = require("mongodb");
 const { default: mongoose } = require("mongoose");
+const {
+  admin_authenticate,
+  both_authenticate,
+} = require("../middlewares/custom_authenticate_token");
 
 const router = express.Router();
 
 // GET all events
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", both_authenticate, async (req, res) => {
   try {
     const events = await Events.find();
 
@@ -19,7 +23,7 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // GET all events and attendees
-router.get("/attendees/:id", authenticateToken, async (req, res) => {
+router.get("/attendees/:id", admin_authenticate, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -39,7 +43,7 @@ router.get("/attendees/:id", authenticateToken, async (req, res) => {
 // UPDATE Attendee isAttended property
 router.put(
   "/attendance/:event_id/:id_number",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     const { event_id, id_number } = req.params;
 
@@ -84,7 +88,7 @@ router.put(
   }
 );
 
-router.get("/check-limit/:eventId", authenticateToken, async (req, res) => {
+router.get("/check-limit/:eventId", admin_authenticate, async (req, res) => {
   const { eventId } = req.params;
 
   const event_id = new ObjectId(eventId);
@@ -102,7 +106,7 @@ router.get("/check-limit/:eventId", authenticateToken, async (req, res) => {
 //update-settings
 router.post(
   "/update-settings/:eventId",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     const { banilad, pt, lm, cs } = req.body;
     const event_id = new ObjectId(req.params.eventId);
@@ -140,7 +144,7 @@ router.post(
 );
 
 // Get Eligible Attendees for Raffle
-router.get("/raffle/:eventId", authenticateToken, async (req, res) => {
+router.get("/raffle/:eventId", admin_authenticate, async (req, res) => {
   const { eventId } = req.params;
 
   try {
@@ -175,7 +179,7 @@ router.get("/raffle/:eventId", authenticateToken, async (req, res) => {
 // Mark Attendee as Raffle Winner
 router.post(
   "/raffle/winner/:eventId/:attendeeId",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     const { eventId, attendeeId } = req.params;
 
@@ -226,7 +230,7 @@ router.post(
 // Remove Attendee from Raffle
 router.put(
   "/raffle/remove/:eventId/:attendeeId",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     const { eventId, attendeeId } = req.params;
 
@@ -272,7 +276,7 @@ router.put(
   }
 );
 
-router.post("/add-attendee", authenticateToken, async (req, res) => {
+router.post("/add-attendee", admin_authenticate, async (req, res) => {
   try {
     const {
       id_number,
@@ -302,7 +306,7 @@ router.post("/add-attendee", authenticateToken, async (req, res) => {
 
     // Check if id_number already exists
     const existingAttendee = event.attendees.find(
-      (attendee) => attendee.id_number === id_number
+      (attendee) => attendee.id_number === id_number && attendee.campus === campus
     );
     if (existingAttendee) {
       return res.status(400).json({ message: "Attendee already registered" });
@@ -337,7 +341,7 @@ router.post("/add-attendee", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/get-statistics/:eventId", authenticateToken, async (req, res) => {
+router.get("/get-statistics/:eventId", admin_authenticate, async (req, res) => {
   try {
     const { eventId } = req.params;
     const event_id = new ObjectId(eventId);
@@ -441,7 +445,7 @@ router.get("/get-statistics/:eventId", authenticateToken, async (req, res) => {
   }
 });
 
-router.post("/remove-attendance", authenticateToken, async (req, res) => {
+router.post("/remove-attendance", admin_authenticate, async (req, res) => {
   try {
     const { id_number, merchId } = req.body;
 

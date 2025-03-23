@@ -53,6 +53,7 @@ const PieChart = () => {
             subtotal,
           });
         } else {
+          setChartData(null);
           console.error("Unexpected data format", result);
         }
       } catch (error) {

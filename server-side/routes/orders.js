@@ -12,10 +12,13 @@ const { format } = require("date-fns");
 const nodemailer = require("nodemailer");
 const ejs = require("ejs");
 const path = require("path");
-const authenticateToken = require("../middlewares/authenticateToken");
+const {
+  admin_authenticate,
+  both_authenticate,
+} = require("../middlewares/custom_authenticate_token");
 
 const router = express.Router();
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", both_authenticate, async (req, res) => {
   const { id_number } = req.query;
 
   try {
@@ -32,7 +35,7 @@ router.get("/", authenticateToken, async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-router.get("/get-all-orders", authenticateToken, async (req, res) => {
+router.get("/get-all-orders", admin_authenticate, async (req, res) => {
   try {
     const orders = await Orders.find().sort({ order_date: -1 });
     if (orders.length > 0) {
@@ -48,7 +51,7 @@ router.get("/get-all-orders", authenticateToken, async (req, res) => {
 
 //orders/get-all-paid-orders
 //get all pending orders
-router.get("/get-all-pending-orders", authenticateToken, async (req, res) => {
+router.get("/get-all-pending-orders", admin_authenticate, async (req, res) => {
   try {
     const orders = await Orders.find({ order_status: "Pending" }).sort({
       order_date: -1,
@@ -65,7 +68,7 @@ router.get("/get-all-pending-orders", authenticateToken, async (req, res) => {
   }
 });
 //Get all paid orders
-router.get("/get-all-paid-orders", authenticateToken, async (req, res) => {
+router.get("/get-all-paid-orders", admin_authenticate, async (req, res) => {
   try {
     const orders = await Orders.find({ order_status: "Paid" }).sort({
       order_date: -1,
@@ -81,7 +84,7 @@ router.get("/get-all-paid-orders", authenticateToken, async (req, res) => {
   }
 });
 
-router.post("/student-order", authenticateToken, async (req, res) => {
+router.post("/student-order", both_authenticate, async (req, res) => {
   const {
     id_number,
     rfid,
@@ -174,7 +177,7 @@ router.post("/student-order", authenticateToken, async (req, res) => {
 });
 
 // Cancel Order
-router.put("/cancel/:product_id", authenticateToken, async (req, res) => {
+router.put("/cancel/:product_id", both_authenticate, async (req, res) => {
   const { product_id } = req.params;
 
   if (!product_id) {
@@ -232,7 +235,7 @@ router.put("/cancel/:product_id", authenticateToken, async (req, res) => {
   }
 });
 
-router.put("/approve-order", authenticateToken, async (req, res) => {
+router.put("/approve-order", admin_authenticate, async (req, res) => {
   const { transaction_date, reference_code, order_id, admin, cash } = req.body;
 
   try {
@@ -421,7 +424,7 @@ router.put("/approve-order", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/get-all-pending-counts", authenticateToken, async (req, res) => {
+router.get("/get-all-pending-counts", admin_authenticate, async (req, res) => {
   try {
     const pendingOrders = await Orders.find({ order_status: "Pending" });
     const productCounts = {};

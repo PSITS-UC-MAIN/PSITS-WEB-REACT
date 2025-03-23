@@ -7,6 +7,11 @@ const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const authenticateToken = require("../middlewares/authenticateToken");
+const { admin_model, user_model } = require("../model_template/model_data");
+const {
+  admin_authenticate,
+  student_authenticate,
+} = require("../middlewares/custom_authenticate_token");
 
 const router = express.Router();
 const token_key = process.env.JWT_SECRET;
@@ -50,7 +55,6 @@ router.post("/login", loginLimiter, async (req, res) => {
         users = student;
         role = "Student";
       } else {
-       
         return res
           .status(400)
           .json({ message: "Invalid ID number or password" });
@@ -73,28 +77,17 @@ router.post("/login", loginLimiter, async (req, res) => {
     }
 
     const user = {
-      _id: users._id,
       id_number: users.id_number,
-      name:
-        role === "Admin"
-          ? users.name
-          : users.first_name + " " + users?.middle_name + " " + users.last_name,
-      email: users.email,
-      course: users.course,
-      year: users.year,
-      position: role === "Admin" ? users.position : "Student",
-      role: users.role,
-      campus: users.campus,
     };
     campus = users.campus;
-    const token = jwt.sign({ user, role }, token_key, {
+    const token = jwt.sign({ user }, token_key, {
       expiresIn: role === "Admin" ? "2h" : "10m",
     });
 
     // Create a log only if the user is an Admin
     if (role === "Admin") {
       const log = new Log({
-        admin: user.name,
+        admin: users.name,
         admin_id: users._id,
         action: "Admin Login",
       });
@@ -116,5 +109,38 @@ router.get("/protected-route", authenticateToken, (req, res) => {
     role: req.role,
   });
 });
+
+//protected route for admin
+router.get("/protected-route-admin", admin_authenticate, async (req, res) => {
+  try {
+    const admin = await Admin.findOne({ id_number: req.user.id_number });
+    if (admin) {
+      return res.status(200).json({
+        user: admin_model(admin),
+        role: "Admin",
+      });
+    } else return res.status(400).json({ message: "Access Denied" });
+  } catch (error) {
+    console.error(error);
+  }
+});
+//Student route
+router.get(
+  "/protected-route-student",
+  student_authenticate,
+  async (req, res) => {
+    try {
+      const student = await Student.findOne({ id_number: req.user.id_number });
+      if (student) {
+        return res.status(200).json({
+          user: user_model(student),
+          role: "Student",
+        });
+      } else return res.status(400).json({ message: "Access Denied" });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+);
 
 module.exports = router;

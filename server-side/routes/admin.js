@@ -10,11 +10,13 @@ const { format, startOfDay, endOfDay } = require("date-fns");
 const nodemailer = require("nodemailer");
 const ejs = require("ejs");
 const path = require("path");
-const authenticateToken = require("../middlewares/authenticateToken");
+const {
+  admin_authenticate,
+} = require("../middlewares/custom_authenticate_token");
 
 const router = express.Router();
 
-router.post("/approve-membership", authenticateToken, async (req, res) => {
+router.post("/approve-membership", admin_authenticate, async (req, res) => {
   const { reference_code, id_number, type, admin, rfid, date, cash, total } =
     req.body;
 
@@ -116,7 +118,7 @@ router.post("/approve-membership", authenticateToken, async (req, res) => {
   }
 });
 
-router.put("/renew-student", authenticateToken, async (req, res) => {
+router.put("/renew-student", admin_authenticate, async (req, res) => {
   try {
     const renewStudent = await Student.updateMany(
       {
@@ -143,7 +145,7 @@ router.put("/renew-student", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/history", authenticateToken, async (req, res) => {
+router.get("/history", admin_authenticate, async (req, res) => {
   try {
     const students = await MembershipHistory.find().sort({ date: -1 });
     res.status(200).json(students);
@@ -152,7 +154,7 @@ router.get("/history", authenticateToken, async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-router.get("/renew", authenticateToken, async (req, res) => {
+router.get("/renew", admin_authenticate, async (req, res) => {
   try {
     const students = await Student.find({ renew: "Pending" });
     res.status(200).json(students);
@@ -162,7 +164,7 @@ router.get("/renew", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/membershipRequest", authenticateToken, async (req, res) => {
+router.get("/membershipRequest", admin_authenticate, async (req, res) => {
   try {
     const students = await Student.find({ membership: "Pending" });
     res.status(200).json(students);
@@ -172,7 +174,7 @@ router.get("/membershipRequest", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/get-students-count", authenticateToken, async (req, res) => {
+router.get("/get-students-count", admin_authenticate, async (req, res) => {
   try {
     const [all, request, renew, deleted, history] = await Promise.all([
       Student.countDocuments({
@@ -196,15 +198,15 @@ router.get("/get-students-count", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/merchandise-created", authenticateToken, async (req, res) => {
+router.get("/merchandise-created", admin_authenticate, async (req, res) => {
   const count = await Merch.countDocuments();
   return res.json({ message: count });
 });
-router.get("/placed-orders", authenticateToken, async (req, res) => {
+router.get("/placed-orders", admin_authenticate, async (req, res) => {
   const count = await Order.countDocuments({ order_status: "Pending" });
   return res.json({ message: count });
 });
-router.get("/dashboard-stats", authenticateToken, async (req, res) => {
+router.get("/dashboard-stats", admin_authenticate, async (req, res) => {
   try {
     const [
       bsitCount,
@@ -244,7 +246,7 @@ router.get("/dashboard-stats", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/get-order-date", authenticateToken, async (req, res) => {
+router.get("/get-order-date", admin_authenticate, async (req, res) => {
   try {
     const currentDate = new Date();
     const startOfDayDate = startOfDay(currentDate);
@@ -308,390 +310,390 @@ router.get("/get-all-officers", async (req, res) => {
 });
 //get all developers
 router.get("/get-all-developers", async (req, res) => {
-	try {
-		const developers = await Student.find({
-			role: "developer",
-			isRequest: false,
-		});
+  try {
+    const developers = await Student.find({
+      role: "developer",
+      isRequest: false,
+    });
 
-		const users = developers.map((developer) => ({
-			id_number: developer.id_number,
-			email: developer.email,
-			name:
-				developer.first_name +
-				" " +
-				developer.middle_name +
-				" " +
-				developer.last_name,
-			course: developer.course,
-			year: developer.year,
-			role: developer.role,
-			status: developer.status,
-		}));
+    const users = developers.map((developer) => ({
+      id_number: developer.id_number,
+      email: developer.email,
+      name:
+        developer.first_name +
+        " " +
+        developer.middle_name +
+        " " +
+        developer.last_name,
+      course: developer.course,
+      year: developer.year,
+      role: developer.role,
+      status: developer.status,
+    }));
 
-		res.status(200).json({ data: users });
-	} catch (error) {
-		console.error("Error fetching officers:", error);
-		res.status(500).json({ error: "Failed to fetch officers" });
-	}
+    res.status(200).json({ data: users });
+  } catch (error) {
+    console.error("Error fetching officers:", error);
+    res.status(500).json({ error: "Failed to fetch officers" });
+  }
 });
 //get all media
 router.get("/get-all-media", async (req, res) => {
-	try {
-		const media = await Student.find({ role: "media", isRequest: false });
+  try {
+    const media = await Student.find({ role: "media", isRequest: false });
 
-		const users = media.map((med) => ({
-			id_number: med.id_number,
-			email: med.email,
-			name: med.first_name + " " + med.middle_name + " " + med.last_name,
-			course: med.course,
-			year: med.year,
-			role: med.role,
-			status: med.status,
-		}));
+    const users = media.map((med) => ({
+      id_number: med.id_number,
+      email: med.email,
+      name: med.first_name + " " + med.middle_name + " " + med.last_name,
+      course: med.course,
+      year: med.year,
+      role: med.role,
+      status: med.status,
+    }));
 
-		res.status(200).json({ data: users });
-	} catch (error) {
-		console.error("Error fetching officers:", error);
-		res.status(500).json({ error: "Failed to fetch officers" });
-	}
+    res.status(200).json({ data: users });
+  } catch (error) {
+    console.error("Error fetching officers:", error);
+    res.status(500).json({ error: "Failed to fetch officers" });
+  }
 });
 //get all volunteers
 router.get("/get-all-volunteers", async (req, res) => {
-	try {
-		const volunteers = await Student.find({
-			role: "volunteers",
-			isRequest: false,
-		});
+  try {
+    const volunteers = await Student.find({
+      role: "volunteers",
+      isRequest: false,
+    });
 
-		const users = volunteers.map((volunteer) => ({
-			id_number: volunteer.id_number,
-			email: volunteer.email,
-			name:
-				volunteer.first_name +
-				" " +
-				volunteer.middle_name +
-				" " +
-				volunteer.last_name,
-			course: volunteer.course,
-			year: volunteer.year,
-			role: volunteer.role,
-			status: volunteer.status,
-		}));
+    const users = volunteers.map((volunteer) => ({
+      id_number: volunteer.id_number,
+      email: volunteer.email,
+      name:
+        volunteer.first_name +
+        " " +
+        volunteer.middle_name +
+        " " +
+        volunteer.last_name,
+      course: volunteer.course,
+      year: volunteer.year,
+      role: volunteer.role,
+      status: volunteer.status,
+    }));
 
-		res.status(200).json({ data: users });
-	} catch (error) {
-		console.error("Error fetching officers:", error);
-		res.status(500).json({ error: "Failed to fetch officers" });
-	}
+    res.status(200).json({ data: users });
+  } catch (error) {
+    console.error("Error fetching officers:", error);
+    res.status(500).json({ error: "Failed to fetch officers" });
+  }
 });
 //get-all-student-officers
 router.get("/get-all-student-officers", async (req, res) => {
-	try {
-		const officer = await Student.find({
-			role: "officers",
-			isRequest: false,
-		});
+  try {
+    const officer = await Student.find({
+      role: "officers",
+      isRequest: false,
+    });
 
-		const users = officer.map((officers) => ({
-			id_number: officers.id_number,
-			email: officers.email,
-			name:
-				officers.first_name +
-				" " +
-				officers.middle_name +
-				" " +
-				officers.last_name,
-			course: officers.course,
-			year: officers.year,
-			role: officers.role,
-			status: officers.status,
-		}));
+    const users = officer.map((officers) => ({
+      id_number: officers.id_number,
+      email: officers.email,
+      name:
+        officers.first_name +
+        " " +
+        officers.middle_name +
+        " " +
+        officers.last_name,
+      course: officers.course,
+      year: officers.year,
+      role: officers.role,
+      status: officers.status,
+    }));
 
-		res.status(200).json({ data: users });
-	} catch (error) {
-		console.error("Error fetching officers:", error);
-		res.status(500).json({ error: "Failed to fetch officers" });
-	}
+    res.status(200).json({ data: users });
+  } catch (error) {
+    console.error("Error fetching officers:", error);
+    res.status(500).json({ error: "Failed to fetch officers" });
+  }
 });
-router.get("/get-suspend-officers", authenticateToken, async (req, res) => {
-	try {
-		const officers = await Admin.find({ status: "Suspend" });
+router.get("/get-suspend-officers", admin_authenticate, async (req, res) => {
+  try {
+    const officers = await Admin.find({ status: "Suspend" });
 
-		const users = officers.map((officer) => ({
-			id_number: officer.id_number,
-			email: officer.email,
-			name: officer.name,
-			course: officer.course,
-			year: officer.year,
-			position: officer.position,
-		}));
+    const users = officers.map((officer) => ({
+      id_number: officer.id_number,
+      email: officer.email,
+      name: officer.name,
+      course: officer.course,
+      year: officer.year,
+      position: officer.position,
+    }));
 
-		res.status(200).json({ data: users });
-	} catch (error) {
-		console.error("Error fetching officers:", error);
-		res.status(500).json({ error: "Failed to fetch officers" });
-	}
+    res.status(200).json({ data: users });
+  } catch (error) {
+    console.error("Error fetching officers:", error);
+    res.status(500).json({ error: "Failed to fetch officers" });
+  }
 });
 
-router.post("/editOfficer", authenticateToken, async (req, res) => {
-	const { id_number, name, position, email, course, year, campus } = req.body;
+router.post("/editOfficer", admin_authenticate, async (req, res) => {
+  const { id_number, name, position, email, course, year, campus } = req.body;
 
-	try {
-		const getAdmin = await Admin.findOne({
-			id_number: req.body.id_number,
-		});
+  try {
+    const getAdmin = await Admin.findOne({
+      id_number: req.body.id_number,
+    });
 
-		const adminResult = await Admin.updateOne(
-			{ id_number: id_number },
-			{
-				$set: {
-					name: name,
-					position: position,
-					campus: campus,
-					email: email,
-					course: course,
-					year: year,
-				},
-			}
-		);
+    const adminResult = await Admin.updateOne(
+      { id_number: id_number },
+      {
+        $set: {
+          name: name,
+          position: position,
+          campus: campus,
+          email: email,
+          course: course,
+          year: year,
+        },
+      }
+    );
 
-		if (adminResult.modifiedCount > 0) {
-			// Log the edit admin action
-			const log = new Log({
-				admin: req.user.name,
-				admin_id: req.user._id,
-				action: "Edited Admin",
-				target: `${id_number} - ${name}`,
-				target_id: getAdmin._id,
-				target_model: "Admin",
-			});
+    if (adminResult.modifiedCount > 0) {
+      // Log the edit admin action
+      const log = new Log({
+        admin: req.user.name,
+        admin_id: req.user._id,
+        action: "Edited Admin",
+        target: `${id_number} - ${name}`,
+        target_id: getAdmin._id,
+        target_model: "Admin",
+      });
 
-			await log.save();
+      await log.save();
 
-			res.status(200).json({ message: "Officer updated successfully" });
-		} else {
-			res.status(404).json({ error: "No officer found with the provided ID" });
-		}
-	} catch (error) {
-		console.error("Error updating officer:", error);
-		res.status(500).json({ error: "Failed to update officer" });
-	}
+      res.status(200).json({ message: "Officer updated successfully" });
+    } else {
+      res.status(404).json({ error: "No officer found with the provided ID" });
+    }
+  } catch (error) {
+    console.error("Error updating officer:", error);
+    res.status(500).json({ error: "Failed to update officer" });
+  }
 });
 
 router.post(
-	"/admin/change-password-officer",
-	authenticateToken,
-	async (req, res) => {
-		try {
-			const getAdmin = await Admin.findOne({
-				id_number: req.body.id_number,
-			});
+  "/admin/change-password-officer",
+  admin_authenticate,
+  async (req, res) => {
+    try {
+      const getAdmin = await Admin.findOne({
+        id_number: req.body.id_number,
+      });
 
-			if (!getAdmin) {
-				return res.status(404).json({ message: "Admin not found" });
-			}
+      if (!getAdmin) {
+        return res.status(404).json({ message: "Admin not found" });
+      }
 
-			const hashedPassword = await bcrypt.hash(req.body.password, 10);
-			getAdmin.password = hashedPassword;
-			await getAdmin.save();
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+      getAdmin.password = hashedPassword;
+      await getAdmin.save();
 
-			// Log the password change action
-			const log = new Log({
-				admin: req.user.name,
-				admin_id: req.user._id,
-				action: "Changed Admin Password",
-				target: `${getAdmin.id_number} - ${getAdmin.name}`,
-				target_id: getAdmin._id,
-				target_model: "Admin",
-			});
+      // Log the password change action
+      const log = new Log({
+        admin: req.user.name,
+        admin_id: req.user._id,
+        action: "Changed Admin Password",
+        target: `${getAdmin.id_number} - ${getAdmin.name}`,
+        target_id: getAdmin._id,
+        target_model: "Admin",
+      });
 
-			await log.save();
+      await log.save();
 
-			res.status(200).json({ message: "Password changed successfully" });
-		} catch (error) {
-			res
-				.status(500)
-				.json({ message: "An error occurred", error: error.message });
-		}
-	}
+      res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "An error occurred", error: error.message });
+    }
+  }
 );
-router.put("/admin/suspend", authenticateToken, async (req, res) => {
-	const { id_number } = req.body;
+router.put("/admin/suspend", admin_authenticate, async (req, res) => {
+  const { id_number } = req.body;
 
-	try {
-		const updatedAdmin = await Admin.updateOne(
-			{ id_number },
-			{
-				$set: {
-					status: "Suspend",
-				},
-			}
-		);
+  try {
+    const updatedAdmin = await Admin.updateOne(
+      { id_number },
+      {
+        $set: {
+          status: "Suspend",
+        },
+      }
+    );
 
-		if (updatedAdmin.modifiedCount > 0) {
-			res.status(200).json({ message: "Admin status updated to Suspend" });
-		} else {
-			res.status(404).json({ message: "Admin not found or already suspended" });
-		}
-	} catch (error) {
-		console.error("Error suspending admin:", error);
-		res
-			.status(500)
-			.json({ message: "An error occurred", error: error.message });
-	}
+    if (updatedAdmin.modifiedCount > 0) {
+      res.status(200).json({ message: "Admin status updated to Suspend" });
+    } else {
+      res.status(404).json({ message: "Admin not found or already suspended" });
+    }
+  } catch (error) {
+    console.error("Error suspending admin:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
 });
 
 //TODO: REMOVE ROLE FROM ADMIN
-router.put("/admin/role-remove", authenticateToken, async (req, res) => {
-	const { id_number } = req.body;
+router.put("/admin/role-remove", admin_authenticate, async (req, res) => {
+  const { id_number } = req.body;
 
-	try {
-		const updatedStudent = await Student.updateOne(
-			{ id_number },
-			{
-				$set: {
-					role: "all",
-				},
-			}
-		);
+  try {
+    const updatedStudent = await Student.updateOne(
+      { id_number },
+      {
+        $set: {
+          role: "all",
+        },
+      }
+    );
 
-		const updatedStudentOrder = await Order.updateMany(
-			{
-				id_number,
-			},
-			{
-				$set: {
-					role: "all",
-				},
-			}
-		);
+    const updatedStudentOrder = await Order.updateMany(
+      {
+        id_number,
+      },
+      {
+        $set: {
+          role: "all",
+        },
+      }
+    );
 
-		if (updatedStudent.modifiedCount > 0) {
-			res.status(200).json({ message: "Role removed successfully" });
-		} else {
-			res.status(404).json({ message: "Student not found" });
-		}
-	} catch (error) {
-		console.error("Error removing role from admin:", error);
-		res
-			.status(500)
-			.json({ message: "An error occurred", error: error.message });
-	}
+    if (updatedStudent.modifiedCount > 0) {
+      res.status(200).json({ message: "Role removed successfully" });
+    } else {
+      res.status(404).json({ message: "Student not found" });
+    }
+  } catch (error) {
+    console.error("Error removing role from admin:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
 });
 
-router.put("/admin/restore-officer", authenticateToken, async (req, res) => {
-	const { id_number } = req.body;
+router.put("/admin/restore-officer", admin_authenticate, async (req, res) => {
+  const { id_number } = req.body;
 
-	try {
-		const getAdmin = await Admin.findOne({
-			id_number: req.body.id_number,
-		});
+  try {
+    const getAdmin = await Admin.findOne({
+      id_number: req.body.id_number,
+    });
 
-		const updatedAdmin = await Admin.updateOne(
-			{ id_number },
-			{
-				$set: {
-					status: "Active",
-				},
-			}
-		);
+    const updatedAdmin = await Admin.updateOne(
+      { id_number },
+      {
+        $set: {
+          status: "Active",
+        },
+      }
+    );
 
-		if (updatedAdmin.modifiedCount > 0) {
-			// Log the restore officer action
-			const log = new Log({
-				admin: req.user.name,
-				admin_id: req.user._id,
-				action: "Restored Suspended Admin",
-				target: `${id_number} - ${getAdmin.name}`,
-				target_id: getAdmin._id,
-				target_model: "Admin",
-			});
+    if (updatedAdmin.modifiedCount > 0) {
+      // Log the restore officer action
+      const log = new Log({
+        admin: req.user.name,
+        admin_id: req.user._id,
+        action: "Restored Suspended Admin",
+        target: `${id_number} - ${getAdmin.name}`,
+        target_id: getAdmin._id,
+        target_model: "Admin",
+      });
 
-			await log.save();
+      await log.save();
 
-			res.status(200).json({ message: "Admin status updated to Active" });
-		} else {
-			res.status(404).json({ message: "Admin not found or already active" });
-		}
-	} catch (error) {
-		console.error("Error activating admin:", error);
-		res
-			.status(500)
-			.json({ message: "An error occurred", error: error.message });
-	}
+      res.status(200).json({ message: "Admin status updated to Active" });
+    } else {
+      res.status(404).json({ message: "Admin not found or already active" });
+    }
+  } catch (error) {
+    console.error("Error activating admin:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
 });
 router.get(
-	"/admin/search-student/:id_number",
-	authenticateToken,
-	async (req, res) => {
-		const { id_number } = req.params;
+  "/admin/search-student/:id_number",
+  admin_authenticate,
+  async (req, res) => {
+    const { id_number } = req.params;
 
-		try {
-			const student = await Student.findOne({
-				id_number,
-				role: "all",
-			});
-			if (!student) {
-				res.status(404).json({
-					message: "Student not found or Student is already added a role",
-				});
-			} else {
-				res.status(200).json({ data: student });
-			}
-		} catch (error) {
-			console.error(error);
-			res
-				.status(500)
-				.json({ message: "An error occurred", error: error.message });
-		}
-	}
+    try {
+      const student = await Student.findOne({
+        id_number,
+        role: "all",
+      });
+      if (!student) {
+        res.status(404).json({
+          message: "Student not found or Student is already added a role",
+        });
+      } else {
+        res.status(200).json({ data: student });
+      }
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ message: "An error occurred", error: error.message });
+    }
+  }
 );
-router.put("/admin/request-role", authenticateToken, async (req, res) => {
-	const { id_number, role, admin } = req.body;
+router.put("/admin/request-role", admin_authenticate, async (req, res) => {
+  const { id_number, role, admin } = req.body;
 
-	try {
-		const student = await Student.findOne({ id_number: id_number });
-		const updatedRole = await Student.updateOne(
-			{ id_number },
-			{
-				$set: {
-					role: role,
-					isRequest: true,
-					adminRequest: admin,
-				},
-			}
-		);
-		const updatedStudentOrder = await Order.updateMany(
-			{ id_number },
-			{
-				$set: {
-					role: role,
-				},
-			}
-		);
-		await new Log({
-			admin: admin,
-			action:
-				"Request Role for " + student.first_name + " " + student.last_name,
-			target: role + " request",
-			target_model: "Student",
-		}).save();
+  try {
+    const student = await Student.findOne({ id_number: id_number });
+    const updatedRole = await Student.updateOne(
+      { id_number },
+      {
+        $set: {
+          role: role,
+          isRequest: true,
+          adminRequest: admin,
+        },
+      }
+    );
+    const updatedStudentOrder = await Order.updateMany(
+      { id_number },
+      {
+        $set: {
+          role: role,
+        },
+      }
+    );
+    await new Log({
+      admin: admin,
+      action:
+        "Request Role for " + student.first_name + " " + student.last_name,
+      target: role + " request",
+      target_model: "Student",
+    }).save();
 
-		if (updatedRole.modifiedCount > 0) {
-			res.status(200).json({ message: "Role updated successfully" });
-		} else {
-			res.status(404).json({ message: "Student not found" });
-		}
-	} catch (error) {
-		console.error("Error updating student role:", error);
-		res
-			.status(500)
-			.json({ message: "An error occurred", error: error.message });
-	}
+    if (updatedRole.modifiedCount > 0) {
+      res.status(200).json({ message: "Role updated successfully" });
+    } else {
+      res.status(404).json({ message: "Student not found" });
+    }
+  } catch (error) {
+    console.error("Error updating student role:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
 });
 
-router.get("/admin/get-request-role", authenticateToken, async (req, res) => {
+router.get("/admin/get-request-role", admin_authenticate, async (req, res) => {
   try {
     const students = await Student.find({ isRequest: true });
     const users = students.map((student) => ({
@@ -716,7 +718,7 @@ router.get("/admin/get-request-role", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/admin/get-request-admin", authenticateToken, async (req, res) => {
+router.get("/admin/get-request-admin", admin_authenticate, async (req, res) => {
   try {
     const admin = await Admin.find({ status: "Request" });
     const users = admin.map((admins) => ({
@@ -734,7 +736,7 @@ router.get("/admin/get-request-admin", authenticateToken, async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-router.put("/admin/approve-role", authenticateToken, async (req, res) => {
+router.put("/admin/approve-role", admin_authenticate, async (req, res) => {
   const { id_number } = req.body;
 
   try {
@@ -760,7 +762,7 @@ router.put("/admin/approve-role", authenticateToken, async (req, res) => {
   }
 });
 
-router.put("/admin/decline-role", authenticateToken, async (req, res) => {
+router.put("/admin/decline-role", admin_authenticate, async (req, res) => {
   const { id_number } = req.body;
 
   try {
@@ -787,7 +789,7 @@ router.put("/admin/decline-role", authenticateToken, async (req, res) => {
   }
 });
 
-router.post("/admin/add-officer", authenticateToken, async (req, res) => {
+router.post("/admin/add-officer", admin_authenticate, async (req, res) => {
   const {
     id_number,
     name,
@@ -825,7 +827,7 @@ router.post("/admin/add-officer", authenticateToken, async (req, res) => {
 
 router.put(
   "/admin/approve-admin-account",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     const { id_number } = req.body;
 
@@ -856,7 +858,7 @@ router.put(
 );
 router.put(
   "/admin/decline-admin-account",
-  authenticateToken,
+  admin_authenticate,
   async (req, res) => {
     const { id_number } = req.body;
 

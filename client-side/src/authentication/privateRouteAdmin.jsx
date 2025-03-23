@@ -38,15 +38,16 @@ const PrivateRouteAdmin = ({ element: Component }) => {
   const checkAuthentication = async () => {
     try {
       const response = await axios.get(
-        `${backendConnection()}/api/protected-route`,
+        `${backendConnection()}/api/protected-route-admin`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      setInformationData(response.data.user, response.data.role);
-      if (response.data.role === "Admin") {
+
+      setInformationData(response.data.user, response.data.user.role);
+      if (response.data.user.role === "Admin") {
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
